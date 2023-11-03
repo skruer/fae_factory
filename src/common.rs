@@ -1,44 +1,63 @@
 use bevy::prelude::*;
 
-#[derive(Component)]
-struct MainMenuUI;
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum GameState {
+    MainMenu,
+    Playing,
+    Paused,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState::Playing
+    }
+}
 
 #[derive(Component)]
-struct MyGameCamera;
+pub struct MainMenuUI;
 
 #[derive(Component)]
-struct Player;
+pub struct MyGameCamera;
 
 #[derive(Component)]
-struct Building;
+pub struct Player;
 
 #[derive(Component)]
-struct Item {
-    name: String,
+pub struct Speed(f32);
+
+#[derive(Component)]
+pub struct Building;
+
+#[derive(Component)]
+pub struct ItemType {
+    id: String,
     stack_size: u32,
 }
 
 #[derive(Component)]
-struct Recipe {
+pub struct Recipe {
     name: String,
-    input: Vec<(Item, u32)>,  // Input cost
-    output: Vec<(Item, u32)>, // Production
-    cost: f32,                // Time to craft
+    input: Vec<(ItemType, u32)>,  // Input cost
+    output: Vec<(ItemType, u32)>, // Production
+    cost: f32,                    // Time to craft
 }
 
 #[derive(Component)]
-struct Assembler {
-    recipe: Recipe,
+pub struct Assembler {
+    recipe: Option<Recipe>,
     progress: f32,
-    progress_bar: Handle<ColorMaterial>,
-    progress_bar_bg: Handle<ColorMaterial>,
+    //progress_bar: Handle<ColorMaterial>,
+    //progress_bar_bg: Handle<ColorMaterial>,
 }
 
 #[derive(Component)]
-struct Position(Vec2);
+pub struct Inventory {
+    pub items: Vec<(ItemType, u32)>,
+    pub slots: u32,
+}
 
 #[derive(Component)]
-struct Name(String);
+pub struct Position(Vec2);
 
 #[derive(Component)]
-struct PlayerName(Name);
+pub struct PlayerName(Name);
