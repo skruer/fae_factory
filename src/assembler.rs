@@ -7,11 +7,13 @@ pub struct AssemblerPlugin;
 impl Plugin for AssemblerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_assembling)
-            .add_systems(Update, cancel_assembling);
+            .add_systems(Update, cancel_assembling)
+            .register_type::<Assembler>()
+            .register_type::<Recipe>();
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Assembler {
     pub recipe: Option<Recipe>,
     pub progress: f32,
@@ -20,6 +22,7 @@ pub struct Assembler {
     //progress_bar_bg: Handle<ColorMaterial>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect)]
 pub enum AssemblerState {
     Idle,
     Pending,
@@ -88,7 +91,7 @@ fn cancel_assembling(
 ) {
     for (mut assembler, mut inventory) in &mut assemblers {
         if input.just_pressed(KeyCode::X) {
-            if let Some(recipe) = &assembler.recipe {
+            if let Some(ref recipe) = &assembler.recipe {
                 for (item, amount) in &recipe.input {
                     inventory.add_item(item, *amount);
                 }

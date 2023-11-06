@@ -1,15 +1,25 @@
 // TODO: Determine how to handle the organization of this bit.
 
-use bevy::{ecs::reflect, prelude::*, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 use core::fmt;
 
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.register_type::<Item>()
+            .register_type::<Inventory>()
+            .register_type::<ItemId>();
+    }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+// This is going to be for items that are in the world.
+#[derive(Component, Reflect)]
+pub struct Item {
+    pub id: ItemId,
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Reflect)]
 pub struct ItemId {
     id: String,
 }
@@ -30,16 +40,17 @@ pub enum ItemList {
 
 impl fmt::Display for ItemList {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use ItemList::*;
         match self {
-            ItemList::Wood => write!(f, "core::wood"),
-            ItemList::Crystal => write!(f, "core::crystal"),
-            ItemList::Stone => write!(f, "core::stone"),
-            ItemList::Toy => write!(f, "core::toy"),
+            Wood => write!(f, "wood"),
+            Crystal => write!(f, "crystal"),
+            Stone => write!(f, "stone"),
+            Toy => write!(f, "toy"),
         }
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct Inventory {
     pub items: HashMap<ItemId, u32>,
     pub slots: u16,

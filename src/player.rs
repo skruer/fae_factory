@@ -79,7 +79,7 @@ fn player_craft(
     mut player: Query<(&mut Inventory, &mut Assembler), With<Player>>,
 ) {
     for (mut inventory, mut assembler) in &mut player {
-        if input.just_pressed(KeyCode::Space) {
+        if input.just_pressed(KeyCode::Space) && assembler.state == AssemblerState::Idle {
             println!("Crafting!");
             assembler.recipe = Some(RecipeList::WoodToToy.get_recipe());
             assembler.state = AssemblerState::Pending;
