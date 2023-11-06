@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use crate::{
-    common::{Inventory, ItemType},
+    assembler::{Assembler, AssemblerState},
+    items::{Inventory, ItemId, ItemList},
+    recipes::RecipeList,
     Speed,
 };
 use bevy::prelude::*;
@@ -9,7 +13,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(Update, player_movement_controls);
+            .add_systems(Update, (player_movement_controls, player_craft));
     }
 }
 
@@ -27,10 +31,14 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         Player {},
         Speed(200.0),
         Name::new("Player"),
-        Inventory {
-            items: vec![(ItemType::new("Wood"), 1)],
-            slots: 10,
-        },
+        Inventory::new(
+            10,
+            vec![
+                (ItemId::new(ItemList::Wood), 10),
+                (ItemId::new(ItemList::Crystal), 10),
+            ],
+        ),
+        Assembler::new(),
     ));
 }
 
@@ -61,6 +69,20 @@ fn player_movement_controls(
         if direction.length() > 0.0 {
             transform.translation.x += distance * direction.x;
             transform.translation.y += distance * direction.y;
+        }
+    }
+}
+
+fn player_craft(
+    mut commands: Commands,
+    input: Res<Input<KeyCode>>,
+    mut player: Query<(&mut Inventory, &mut Assembler), With<Player>>,
+) {
+    for (mut inventory, mut assembler) in &mut player {
+        if input.just_pressed(KeyCode::Space) {
+            println!("Crafting!");
+            assembler.recipe = Some(RecipeList::WoodToToy.get_recipe());
+            assembler.state = AssemblerState::Pending;
         }
     }
 }

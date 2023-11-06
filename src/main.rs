@@ -1,9 +1,11 @@
+use assembler::AssemblerPlugin;
 use bevy::{
     input::common_conditions::input_toggle_active, prelude::*, render::camera::ScalingMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use player::PlayerPlugin;
 
+mod assembler;
 mod common;
 mod items;
 mod player;
@@ -29,7 +31,7 @@ fn main() {
                 .build(),
         )
         .add_systems(Startup, setup)
-        .add_plugins(PlayerPlugin)
+        .add_plugins((PlayerPlugin, AssemblerPlugin))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_plugins(
             WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::Grave)),
