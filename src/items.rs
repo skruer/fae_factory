@@ -86,15 +86,15 @@ impl Inventory {
         println!("{:?}", self.items);
     }
 
-    pub fn remove_item(&mut self, item: &ItemId, amount: u32) {
-        if self.items.get(item).map_or(false, |a| *a >= amount) {
-            for (i, a) in &mut self.items {
-                if i.id == item.id {
-                    *a -= amount;
-                    break;
-                }
+    pub fn remove_item(&mut self, item: &ItemId, amount: u32) -> bool {
+        if let Some(current) = self.items.get_mut(item) {
+            if *current >= amount {
+                *current -= amount;
+                println!("{:?}", self.items);
+                return true;
             }
         }
         println!("{:?}", self.items);
+        return false;
     }
 }

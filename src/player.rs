@@ -6,6 +6,8 @@ use crate::{
     recipes::RecipeList,
     Speed,
 };
+
+use crate::structure::SelectedStructure;
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -39,6 +41,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             ],
         ),
         Assembler::new(),
+        SelectedStructure(None),
     ));
 }
 

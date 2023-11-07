@@ -3,11 +3,14 @@ use bevy::{
     input::common_conditions::input_toggle_active, prelude::*, render::camera::ScalingMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use input::{FaeInputPlugin, MainCamera};
 use items::ItemPlugin;
 use player::PlayerPlugin;
+use structure::StructurePlugin;
 
 mod assembler;
 mod common;
+mod input;
 mod items;
 mod player;
 mod recipes;
@@ -33,7 +36,13 @@ fn main() {
                 .build(),
         )
         .add_systems(Startup, setup)
-        .add_plugins((PlayerPlugin, AssemblerPlugin, ItemPlugin))
+        .add_plugins((
+            PlayerPlugin,
+            AssemblerPlugin,
+            ItemPlugin,
+            StructurePlugin,
+            FaeInputPlugin,
+        ))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_plugins(
             WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::Grave)),
@@ -44,9 +53,5 @@ fn main() {
 fn setup(mut commands: Commands) {
     let mut camera = Camera2dBundle::default();
 
-    camera.projection.scaling_mode = ScalingMode::AutoMin {
-        min_width: 256.0,
-        min_height: 144.0,
-    };
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((camera, MainCamera {}));
 }
