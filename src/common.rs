@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{items::ItemId, recipes::Recipe};
+use crate::{items::ItemId, recipes::Recipe, structures::StructureId};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
@@ -25,7 +25,34 @@ pub struct MyGameCamera;
 pub struct Speed(f32);
 
 #[derive(Component)]
-pub struct Building;
+pub struct BoundingBox(pub Rect);
 
 #[derive(Component)]
-pub struct Position(Vec2);
+pub struct Clickable;
+
+#[derive(Component)]
+pub struct Hoverable;
+
+#[derive(Component)]
+pub enum Holdable {
+    Item(ItemId),
+    Structure(StructureId),
+}
+
+#[derive(Component)]
+pub struct Held(pub Option<Holdable>);
+
+pub fn round_to_grid(pos: Vec2) -> Vec2 {
+    let grid_step = 20.0;
+    let round_up = |num: f32| -> f32 {
+        let remainder = num % grid_step;
+        if remainder == 0.0 {
+            num
+        } else {
+            num + grid_step - remainder
+        }
+    };
+    let x = round_up(pos.x.round()) as i32;
+    let y = round_up(pos.y.round()) as i32;
+    Vec2::new(x as f32, y as f32)
+}

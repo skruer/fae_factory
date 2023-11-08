@@ -1,20 +1,20 @@
-use assembler::AssemblerPlugin;
 use bevy::{
     input::common_conditions::input_toggle_active, prelude::*, render::camera::ScalingMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use input::{FaeInputPlugin, MainCamera};
+use crafting::CraftingPlugin;
+use input::{camera::MainCamera, FaeInputPlugin};
 use items::ItemPlugin;
 use player::PlayerPlugin;
-use structure::StructurePlugin;
+use structures::StructurePlugin;
 
-mod assembler;
 mod common;
+mod crafting;
 mod input;
 mod items;
 mod player;
 mod recipes;
-mod structure;
+mod structures;
 
 #[derive(Component)]
 pub struct Speed(pub f32);
@@ -26,8 +26,8 @@ fn main() {
                 .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: "Logic Farming Roguelike".into(),
-                        resolution: (640.0, 480.0).into(),
+                        title: "Fae Factory".into(),
+                        resolution: (1000.0, 750.0).into(),
                         resizable: false,
                         ..default()
                     }),
@@ -35,10 +35,9 @@ fn main() {
                 })
                 .build(),
         )
-        .add_systems(Startup, setup)
         .add_plugins((
             PlayerPlugin,
-            AssemblerPlugin,
+            CraftingPlugin,
             ItemPlugin,
             StructurePlugin,
             FaeInputPlugin,
@@ -48,10 +47,4 @@ fn main() {
             WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::Grave)),
         )
         .run();
-}
-
-fn setup(mut commands: Commands) {
-    let mut camera = Camera2dBundle::default();
-
-    commands.spawn((camera, MainCamera {}));
 }

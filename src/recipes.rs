@@ -4,7 +4,7 @@ use core::fmt;
 
 pub struct RecipeId(String);
 
-#[derive(Reflect)]
+#[derive(Reflect, Clone, Debug)]
 pub struct Recipe {
     pub name: String,
     pub input: Vec<(ItemId, u32)>,  // Input cost

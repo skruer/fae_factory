@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{
-    assembler::{Assembler, AssemblerState},
+    crafting::{AssemblerState, Crafter},
     items::{Inventory, ItemId, ItemList},
     recipes::RecipeList,
+    structures::SelectedStructure,
     Speed,
 };
 
-use crate::structure::SelectedStructure;
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -19,8 +19,40 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Player;
+
+#[derive(Component, Reflect)]
+pub struct PlayerMove(pub Option<Vec2>);
+
+#[derive(Bundle)]
+pub struct FaePlayerBundle {
+    pub player: Player,
+    pub player_move: PlayerMove,
+    pub speed: Speed,
+    pub inventory: Inventory,
+    pub crafter: Crafter,
+    pub selected_structure: SelectedStructure,
+}
+
+impl Default for FaePlayerBundle {
+    fn default() -> Self {
+        FaePlayerBundle {
+            player: Player,
+            player_move: PlayerMove(None),
+            speed: Speed(200.0),
+            inventory: Inventory::new(
+                10,
+                vec![
+                    (ItemId::new(ItemList::Wood), 10),
+                    (ItemId::new(ItemList::Crystal), 10),
+                ],
+            ),
+            crafter: Crafter::new(),
+            selected_structure: SelectedStructure(None),
+        }
+    }
+}
 
 fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     let texture = asset_server.load("character.png");
@@ -30,62 +62,39 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             texture,
             ..default()
         },
-        Player {},
-        Speed(200.0),
-        Name::new("Player"),
-        Inventory::new(
-            10,
-            vec![
-                (ItemId::new(ItemList::Wood), 10),
-                (ItemId::new(ItemList::Crystal), 10),
-            ],
-        ),
-        Assembler::new(),
-        SelectedStructure(None),
+        FaePlayerBundle { ..default() },
     ));
 }
 
 fn player_movement_controls(
-    mut characters: Query<(&mut Transform, &Speed, &Player)>,
-    input: Res<Input<KeyCode>>,
+    mut player: Query<(&PlayerMove, &Speed, &mut Transform), With<Player>>,
     time: Res<Time>,
 ) {
-    for (mut transform, speed, _player) in &mut characters {
-        let distance = speed.0 * time.delta_seconds();
+    let (direction, speed, mut transform) = player.single_mut();
+    if direction.0.is_none() {
+        return;
+    }
 
-        let keys = vec![
-            (KeyCode::W, Vec2::new(0.0, 1.0)),
-            (KeyCode::S, Vec2::new(0.0, -1.0)),
-            (KeyCode::D, Vec2::new(1.0, 0.0)),
-            (KeyCode::A, Vec2::new(-1.0, 0.0)),
-        ];
+    let direction = direction.0.unwrap();
 
-        let direction = keys
-            .iter()
-            .map(|(key, direction)| match input.pressed(*key) {
-                true => *direction,
-                _ => Vec2::new(0.0, 0.0),
-            })
-            .fold(Vec2::new(0.0, 0.0), |acc, direction| acc + direction)
-            .normalize();
+    let distance = speed.0 * time.delta_seconds();
 
-        if direction.length() > 0.0 {
-            transform.translation.x += distance * direction.x;
-            transform.translation.y += distance * direction.y;
-        }
+    if direction.length() > 0.0 {
+        transform.translation.x += distance * direction.x;
+        transform.translation.y += distance * direction.y;
     }
 }
 
 fn player_craft(
     mut commands: Commands,
     input: Res<Input<KeyCode>>,
-    mut player: Query<(&mut Inventory, &mut Assembler), With<Player>>,
+    mut player: Query<(&mut Inventory, &mut Crafter), With<Player>>,
 ) {
     for (mut inventory, mut assembler) in &mut player {
         if input.just_pressed(KeyCode::Space) && assembler.state == AssemblerState::Idle {
             println!("Crafting!");
             assembler.recipe = Some(RecipeList::WoodToToy.get_recipe());
-            assembler.state = AssemblerState::Pending;
+            assembler.state = AssemblerState::Pending(false); // Don't repeat crafting for the player
         }
     }
 }

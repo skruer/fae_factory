@@ -1,19 +1,25 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-pub struct FaeInputPlugin;
+use super::MyWorldCoords;
 
-#[derive(Resource, Default)]
-pub struct MyWorldCoords(pub Vec2);
+pub struct FaeCameraPlugin;
 
 /// Used to help identify our main camera
 #[derive(Component)]
 pub struct MainCamera;
 
-impl Plugin for FaeInputPlugin {
+impl Plugin for FaeCameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(MyWorldCoords(Vec2::new(0.0, 0.0)))
+            .add_systems(Startup, setup)
             .add_systems(PreUpdate, my_cursor_system);
     }
+}
+
+fn setup(mut commands: Commands) {
+    let camera = Camera2dBundle::default();
+
+    commands.spawn((camera, MainCamera {}));
 }
 
 fn my_cursor_system(

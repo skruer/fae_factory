@@ -56,6 +56,18 @@ pub struct Inventory {
     pub slots: u16,
 }
 
+// #[derive(Event)]
+// pub struct ItemRemovedEvent {
+//     pub entity: Entity,
+//     pub items: Vec<(ItemId, u32)>,
+// }
+
+// #[derive(Event)]
+// pub struct ItemAddedEvent {
+//     pub entity: Entity,
+//     pub items: Vec<(ItemId, u32)>,
+// }
+
 impl Inventory {
     pub fn new(slots: u16, collection: impl IntoIterator<Item = (ItemId, u32)>) -> Self {
         let mut inventory = Inventory {
