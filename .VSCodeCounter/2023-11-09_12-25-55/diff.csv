@@ -1,0 +1,17 @@
+"filename", "language", "Rust", "TOML", "comment", "blank", "total"
+"c:\Projects\personal\rust\fae_factory\Cargo.lock", "TOML", 0, 32, 0, 4, 36
+"c:\Projects\personal\rust\fae_factory\Cargo.toml", "TOML", 0, 2, 0, 0, 2
+"c:\Projects\personal\rust\fae_factory\src\common.rs", "Rust", 14, 0, 0, 2, 16
+"c:\Projects\personal\rust\fae_factory\src\crafting.rs", "Rust", -10, 0, 0, 1, -9
+"c:\Projects\personal\rust\fae_factory\src\input\keyboard.rs", "Rust", 25, 0, 1, 3, 29
+"c:\Projects\personal\rust\fae_factory\src\input\mod.rs", "Rust", 46, 0, 0, 7, 53
+"c:\Projects\personal\rust\fae_factory\src\input\mouse.rs", "Rust", 34, 0, 0, 3, 37
+"c:\Projects\personal\rust\fae_factory\src\items.rs", "Rust", -101, 0, -13, -20, -134
+"c:\Projects\personal\rust\fae_factory\src\items\inventory.rs", "Rust", 107, 0, 1, 14, 122
+"c:\Projects\personal\rust\fae_factory\src\items\mod.rs", "Rust", 104, 0, 3, 19, 126
+"c:\Projects\personal\rust\fae_factory\src\main.rs", "Rust", 3, 0, 0, 0, 3
+"c:\Projects\personal\rust\fae_factory\src\recipes.rs", "Rust", 35, 0, -1, 3, 37
+"c:\Projects\personal\rust\fae_factory\src\research\mod.rs", "Rust", 13, 0, 0, 5, 18
+"c:\Projects\personal\rust\fae_factory\src\structures\assembler.rs", "Rust", 19, 0, -1, 2, 20
+"c:\Projects\personal\rust\fae_factory\src\structures\mod.rs", "Rust", 14, 0, -1, 0, 13
+"Total", "-", 303, 34, -11, 43, 369

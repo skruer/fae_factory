@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use crate::{
-    common::{Held, Holdable},
+    common::Held,
     crafting::{Crafter, CrafterState},
     items::{inventory::Inventory, ItemType},
     recipes::{Recipe, RecipeType},
@@ -83,9 +81,9 @@ fn player_movement_controls(
 fn player_craft(
     mut commands: Commands,
     input: Res<Input<KeyCode>>,
-    mut player: Query<(&mut Inventory, &mut Crafter), With<Player>>,
+    mut player: Query<&mut Crafter, With<Player>>,
 ) {
-    for (mut inventory, mut assembler) in &mut player {
+    for (mut assembler) in &mut player {
         if input.just_pressed(KeyCode::Space) && assembler.state == CrafterState::Idle {
             println!("Crafting!");
             assembler.recipe = Some(Recipe::from(RecipeType::WoodToToy));

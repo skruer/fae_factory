@@ -1,9 +1,7 @@
-use bevy::{
-    input::common_conditions::input_toggle_active, prelude::*, render::camera::ScalingMode,
-};
+use bevy::{input::common_conditions::input_toggle_active, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use crafting::CraftingPlugin;
-use input::{camera::MainCamera, FaeInputPlugin};
+use input::FaeInputPlugin;
 use items::ItemPlugin;
 use player::PlayerPlugin;
 use research::ResearchPlugin;

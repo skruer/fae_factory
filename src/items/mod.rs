@@ -1,13 +1,12 @@
 // TODO: Determine how to handle the organization of this bit.
 
-use bevy::{ecs::event, prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use core::fmt;
 
 use crate::{
     common::{Clickable, Held, Holdable},
     input::mouse::{FaeEntityClickEvent, FaeEntityContextClickEvent},
     player::Player,
-    recipes::Recipe,
 };
 
 use self::inventory::Inventory;
@@ -63,7 +62,7 @@ fn handle_click_insert_item(
     mut held_item: Query<&mut Held>,
 ) {
     // Retrieve the newest click event, if it exists, and extract the clicked inventory and transform.
-    let (mut clicked_inventory, clicked_transform) = match event.iter().last() {
+    let (mut clicked_inventory, _clicked_transform) = match event.iter().last() {
         Some(click_event) => {
             if !click_event.modifiers.check_only_pressed(&vec![]) || click_event.entity.is_none() {
                 return;
@@ -89,7 +88,7 @@ fn handle_click_insert_item(
         return;
     }
 
-    let (mut player_inventory, player_transform) = player.single_mut();
+    let (mut player_inventory, _player_transform) = player.single_mut();
     if player_inventory.remove_items([(item, 1)].to_vec()) {
         clicked_inventory.add_items([(item, 1)].to_vec());
     }
@@ -104,7 +103,7 @@ fn handle_click_empty(
     mut player: Query<(&mut Inventory, &Transform), With<Player>>,
     mut query: Query<(&mut Inventory, &Transform), (With<Clickable>, Without<Player>)>,
 ) {
-    let (mut clicked_inventory, clicked_transform) = match event.iter().last() {
+    let (mut clicked_inventory, _clicked_transform) = match event.iter().last() {
         Some(click_event) => {
             if !click_event.modifiers.check_only_pressed(&vec![]) || click_event.entity.is_none() {
                 return;
@@ -120,6 +119,6 @@ fn handle_click_empty(
         _ => return,
     };
 
-    let (mut player_inventory, player_transform) = player.single_mut();
+    let (mut player_inventory, _player_transform) = player.single_mut();
     clicked_inventory.empty_into_other(&mut player_inventory);
 }

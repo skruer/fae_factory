@@ -1,4 +1,4 @@
-use bevy::{asset::LoadState, prelude::*};
+use bevy::prelude::*;
 
 use crate::common::Held;
 use crate::input::mouse::FaeEntityClickEvent;

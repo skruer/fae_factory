@@ -1,5 +1,3 @@
-use std::default;
-
 use bevy::prelude::*;
 
 use crate::{items::inventory::Inventory, player::Player, recipes::Recipe};

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{items::ItemType, recipes::Recipe, structures::StructureType};
+use crate::{items::ItemType, structures::StructureType};
 
 struct FaeCommonPlugin;
 

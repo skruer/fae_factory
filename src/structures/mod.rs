@@ -1,10 +1,6 @@
 use core::fmt;
 
-use bevy::{
-    input::mouse::MouseButtonInput, prelude::*, transform::commands, utils::HashMap,
-    window::PrimaryWindow,
-};
-use bevy_inspector_egui::egui::Key;
+use bevy::prelude::*;
 
 use crate::{
     common::{round_to_grid, BoundingBox, Clickable, Held, Holdable},
@@ -25,7 +21,6 @@ pub struct StructurePlugin;
 impl Plugin for StructurePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AssemblerPlugin)
-            .add_systems(Startup, load_structure_assets)
             .add_systems(Update, (spawn_structure, bound_structure))
             .register_type::<Structure>()
             .register_type::<StructureType>();
@@ -70,22 +65,13 @@ impl fmt::Display for StructureType {
     }
 }
 
-fn load_structure_assets(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    let texture_handle: Handle<Image> = asset_server.load("building.png");
-}
-
 fn spawn_structure(
-    mut commands: Commands,
+    commands: Commands,
     mut event: EventReader<FaeEntityClickEvent>,
     mouse_position: Res<MyWorldCoords>,
     mut query: Query<(&mut Inventory, &Transform), With<Player>>,
     mut selected_structure: Query<&mut Held>,
     asset_server: Res<AssetServer>,
-    assets: Res<Assets<Image>>,
 ) {
     let mut selected_structure = selected_structure.single_mut();
     if let Some(click_event) = event.iter().last() {
@@ -94,7 +80,7 @@ fn spawn_structure(
             return;
         }
 
-        let (mut inventory, transform) = query.single_mut();
+        let (mut inventory, _transform) = query.single_mut();
 
         let structure_type = match selected_structure.0 {
             Some(Holdable::Structure(structure_type)) => structure_type,
