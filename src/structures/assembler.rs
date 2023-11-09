@@ -1,41 +1,85 @@
-use bevy::prelude::*;
+use bevy::{asset::LoadState, prelude::*};
 
+use crate::common::Held;
+use crate::input::mouse::FaeEntityClickEvent;
+use crate::input::FaeEntityInputModifier;
+use crate::items::inventory::Inventory;
+use crate::research::AvailableRecipes;
 use crate::{
-    common::{BoundingBox, Clickable},
-    items::Inventory,
+    common::Clickable,
+    crafting::{Crafter, CrafterState},
+    recipes::{Recipe, RecipeType},
 };
 
-use super::{Structure, StructureId, StructureList, STRUCTURE_Z};
+use super::{Structure, StructureType, STRUCTURE_Z};
+
+pub(super) struct AssemblerPlugin;
+
+impl Plugin for AssemblerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, select_assembler_recipe);
+    }
+}
 
 pub(super) fn spawn_assembler(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    assets: Res<Assets<Image>>,
-    transform: &Transform,
     position: &Vec2,
 ) {
-    let texture = asset_server.load("assembler.png");
-    let image_dimensions = assets.get(&texture).unwrap().size();
-    let scaled_image_dimension = image_dimensions * transform.scale.truncate();
-    let bounding_box =
-        Rect::from_center_size(transform.translation.truncate(), scaled_image_dimension);
-    commands
-        .spawn((
-            SpriteBundle {
-                texture,
-                transform: Transform {
-                    translation: Vec3::new(position.x, position.y, STRUCTURE_Z),
-                    ..default()
-                },
+    println!("Spawning assembler at {:?}", position);
+    let texture = asset_server.load("building.png");
+    commands.spawn((
+        SpriteBundle {
+            texture,
+            transform: Transform {
+                translation: Vec3::new(position.x, position.y, STRUCTURE_Z),
                 ..default()
             },
-            Name::new("Assembler"),
-            Structure {
-                structure_id: StructureId::new(StructureList::Assembler),
-            },
-            Inventory::new(2, vec![]),
-            BoundingBox(bounding_box),
-            Clickable {},
-        ))
-        .with_children(|child_builder| {});
+            ..default()
+        },
+        Name::new("Assembler"),
+        Structure {
+            structure_type: StructureType::Assembler,
+        },
+        Crafter {
+            recipe: None,
+            state: CrafterState::Pending(true),
+            ..default()
+        },
+        Inventory::new(2, None).filtered_for(&Recipe::from(RecipeType::WoodToToy)),
+        Clickable {},
+    ));
+}
+
+fn select_assembler_recipe(
+    mut event: EventReader<FaeEntityClickEvent>,
+    mut query: Query<&mut Crafter>,
+    available_recipes: Res<AvailableRecipes>,
+    selected_structure: Query<&Held>,
+) {
+    if let Some(_) = selected_structure.single().0 {
+        return;
+    }
+
+    if let Some(event) = event.into_iter().last() {
+        let entity = match event.entity {
+            Some(entity) => entity,
+            None => return,
+        };
+
+        if event
+            .modifiers
+            .check_only_pressed(&vec![FaeEntityInputModifier::Shift])
+        {
+            println!("Selecting assembler recipe");
+            if let Ok(mut crafter) = query.get_mut(entity) {
+                crafter.recipe = match crafter.recipe.as_ref() {
+                    Some(recipe) => Some(Recipe::from(
+                        recipe.recipe_type.next_available_recipe(&available_recipes),
+                    )),
+                    None => Some(Recipe::from(RecipeType::WoodToToy)),
+                };
+            }
+        }
+    }
 }

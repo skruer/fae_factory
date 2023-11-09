@@ -14,6 +14,7 @@ mod input;
 mod items;
 mod player;
 mod recipes;
+mod research;
 mod structures;
 
 #[derive(Component)]

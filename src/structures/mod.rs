@@ -1,14 +1,20 @@
 use core::fmt;
 
-use bevy::{input::mouse::MouseButtonInput, prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{
+    input::mouse::MouseButtonInput, prelude::*, transform::commands, utils::HashMap,
+    window::PrimaryWindow,
+};
+use bevy_inspector_egui::egui::Key;
 
 use crate::{
-    common::{round_to_grid, BoundingBox, Clickable},
-    input::MyWorldCoords,
-    items::{Inventory, ItemId, ItemList},
+    common::{round_to_grid, BoundingBox, Clickable, Held, Holdable},
+    input::{mouse::FaeEntityClickEvent, MyWorldCoords},
+    items::{inventory::Inventory, ItemType},
     player::Player,
     structures::assembler::spawn_assembler,
 };
+
+use self::assembler::AssemblerPlugin;
 
 mod assembler;
 
@@ -18,104 +24,110 @@ pub struct StructurePlugin;
 
 impl Plugin for StructurePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (spawn_structure, select_structure))
+        app.add_plugins(AssemblerPlugin)
+            .add_systems(Startup, load_structure_assets)
+            .add_systems(Update, (spawn_structure, bound_structure))
             .register_type::<Structure>()
-            .register_type::<StructureId>()
-            .register_type::<StructureList>();
+            .register_type::<StructureType>();
     }
 }
 
 #[derive(Component, Reflect)]
 struct Structure {
-    structure_id: StructureId,
+    structure_type: StructureType,
 }
 
-#[derive(Component, Reflect)]
-pub struct SelectedStructure(pub Option<StructureId>);
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+pub enum StructureType {
+    Assembler,
+    Conveyor,
+    Storage,
+    Grabber,
+}
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Reflect)]
-pub struct StructureId(String);
-
-impl StructureId {
-    fn new(id: StructureList) -> Self {
-        StructureId(id.to_string())
+impl StructureType {
+    fn get_cost(&self) -> Vec<(ItemType, u32)> {
+        use ItemType::*;
+        use StructureType::*;
+        match self {
+            Assembler => [(Crystal, 3), (Wood, 3)].to_vec(),
+            Conveyor => [(Crystal, 1), (Wood, 1), (Stone, 1)].to_vec(),
+            Storage => [(Stone, 5)].to_vec(),
+            Grabber => [(Crystal, 2)].to_vec(),
+        }
     }
 }
 
-#[derive(Component, Debug, Reflect)]
-pub enum StructureList {
-    Assembler,
-    Conveyor,
-    Miner,
-    Splitter,
-    Storage,
-}
-
-impl fmt::Display for StructureList {
+impl fmt::Display for StructureType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use StructureList::*;
+        use StructureType::*;
         match self {
             Assembler => write!(f, "assembler"),
             Conveyor => write!(f, "conveyor"),
-            Miner => write!(f, "miner"),
-            Splitter => write!(f, "splitter"),
             Storage => write!(f, "storage"),
+            Grabber => write!(f, "grabber"),
         }
     }
+}
+
+fn load_structure_assets(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let texture_handle: Handle<Image> = asset_server.load("building.png");
 }
 
 fn spawn_structure(
     mut commands: Commands,
-    mouse: Res<Input<MouseButton>>,
+    mut event: EventReader<FaeEntityClickEvent>,
     mouse_position: Res<MyWorldCoords>,
     mut query: Query<(&mut Inventory, &Transform), With<Player>>,
-    mut selected_structure: Query<&mut SelectedStructure>,
+    mut selected_structure: Query<&mut Held>,
     asset_server: Res<AssetServer>,
     assets: Res<Assets<Image>>,
 ) {
-    if mouse.just_pressed(MouseButton::Left) {
-        println!("Left mouse button pressed at {:?}", mouse_position.0);
-        let (mut inventory, transform) = query.single_mut();
-        let mut selected_structure = selected_structure.single_mut();
-
-        if selected_structure.0.is_none() {
+    let mut selected_structure = selected_structure.single_mut();
+    if let Some(click_event) = event.iter().last() {
+        if let Some(_entity) = click_event.entity {
+            // If we clicked on a structure, don't spawn a new one
             return;
         }
 
-        if inventory.remove_item(&ItemId::new(ItemList::Crystal), 1) {
-            let structure_id = selected_structure.0.as_ref().unwrap().clone();
-            *selected_structure = SelectedStructure(None);
+        let (mut inventory, transform) = query.single_mut();
 
+        let structure_type = match selected_structure.0 {
+            Some(Holdable::Structure(structure_type)) => structure_type,
+            _ => return,
+        };
+        if inventory.remove_items(structure_type.get_cost()) {
             let position = round_to_grid(mouse_position.0);
-            let texture: Handle<Image> = asset_server.load("Building.png");
-
-            println!(
-                "Spawning structure at {:?}; player {:?}",
-                position, transform,
-            );
-            // TODO: This isn't the right way. Maybe fire an event to spawn it?
-            spawn_assembler(commands, asset_server, assets, transform, &position);
-            *selected_structure = SelectedStructure(None);
+            match structure_type {
+                StructureType::Assembler => spawn_assembler(commands, asset_server, &position),
+                StructureType::Conveyor => {}
+                StructureType::Storage => {}
+                StructureType::Grabber => {}
+            }
+            *selected_structure = Held(None);
         }
     }
 }
 
-fn select_structure(keys: Res<Input<KeyCode>>, mut query: Query<&mut SelectedStructure>) {
-    // This should be defined like this for future use with player configuration
-    let select_keys = vec![
-        (KeyCode::Key1, StructureId::new(StructureList::Assembler)),
-        (KeyCode::Key2, StructureId::new(StructureList::Conveyor)),
-        (KeyCode::Key3, StructureId::new(StructureList::Miner)),
-        (KeyCode::Key4, StructureId::new(StructureList::Splitter)),
-        (KeyCode::Key5, StructureId::new(StructureList::Storage)),
-    ];
-
-    let mut selected_structure = query.single_mut();
-
-    select_keys.iter().for_each(|(key, structure)| {
-        if keys.just_pressed(*key) {
-            selected_structure.0 = Some(structure.clone());
-            println!("Selected structure: {}", structure.0);
+fn bound_structure(
+    mut commands: Commands,
+    structure: Query<(Entity, &Transform, &Handle<Image>), (With<Clickable>, Without<BoundingBox>)>,
+    assets: Res<Assets<Image>>,
+) {
+    for (entity, transform, texture_handle) in &mut structure.iter() {
+        if let Some(image) = assets.get(texture_handle) {
+            let image_dimensions = image.size();
+            let scaled_image_dimension = image_dimensions * transform.scale.truncate();
+            let bounding_box = BoundingBox(Rect::from_center_size(
+                transform.translation.truncate(),
+                scaled_image_dimension,
+            ));
+            println!("Adding bounding box to structure at {:?}", bounding_box);
+            commands.entity(entity).insert(bounding_box);
         }
-    });
+    }
 }

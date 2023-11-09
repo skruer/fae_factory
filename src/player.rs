@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    crafting::{AssemblerState, Crafter},
-    items::{Inventory, ItemId, ItemList},
-    recipes::RecipeList,
-    structures::SelectedStructure,
+    common::{Held, Holdable},
+    crafting::{Crafter, CrafterState},
+    items::{inventory::Inventory, ItemType},
+    recipes::{Recipe, RecipeType},
     Speed,
 };
 
@@ -32,24 +32,19 @@ pub struct FaePlayerBundle {
     pub speed: Speed,
     pub inventory: Inventory,
     pub crafter: Crafter,
-    pub selected_structure: SelectedStructure,
+    pub held: Held,
 }
 
 impl Default for FaePlayerBundle {
     fn default() -> Self {
+        use ItemType::*;
         FaePlayerBundle {
             player: Player,
             player_move: PlayerMove(None),
             speed: Speed(200.0),
-            inventory: Inventory::new(
-                10,
-                vec![
-                    (ItemId::new(ItemList::Wood), 10),
-                    (ItemId::new(ItemList::Crystal), 10),
-                ],
-            ),
+            inventory: Inventory::new(10, Some(vec![(Wood, 10), (Crystal, 10), (Stone, 10)])),
             crafter: Crafter::new(),
-            selected_structure: SelectedStructure(None),
+            held: Held(None),
         }
     }
 }
@@ -91,10 +86,10 @@ fn player_craft(
     mut player: Query<(&mut Inventory, &mut Crafter), With<Player>>,
 ) {
     for (mut inventory, mut assembler) in &mut player {
-        if input.just_pressed(KeyCode::Space) && assembler.state == AssemblerState::Idle {
+        if input.just_pressed(KeyCode::Space) && assembler.state == CrafterState::Idle {
             println!("Crafting!");
-            assembler.recipe = Some(RecipeList::WoodToToy.get_recipe());
-            assembler.state = AssemblerState::Pending(false); // Don't repeat crafting for the player
+            assembler.recipe = Some(Recipe::from(RecipeType::WoodToToy));
+            assembler.state = CrafterState::Pending(false); // Don't repeat crafting for the player
         }
     }
 }

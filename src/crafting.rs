@@ -1,6 +1,8 @@
+use std::default;
+
 use bevy::prelude::*;
 
-use crate::{items::Inventory, player::Player, recipes::Recipe};
+use crate::{items::inventory::Inventory, player::Player, recipes::Recipe};
 
 pub struct CraftingPlugin;
 
@@ -20,17 +22,18 @@ pub struct CraftCompleteEvent {
     pub recipe: Recipe,
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 pub struct Crafter {
     pub recipe: Option<Recipe>,
     pub progress: f32,
-    pub state: AssemblerState,
+    pub state: CrafterState,
     //progress_bar: Handle<ColorMaterial>,
     //progress_bar_bg: Handle<ColorMaterial>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect)]
-pub enum AssemblerState {
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect, Default)]
+pub enum CrafterState {
+    #[default]
     Idle,
     Pending(bool),
     Assembling(bool),
@@ -41,7 +44,7 @@ impl Crafter {
         Crafter {
             recipe: None,
             progress: 0.0,
-            state: AssemblerState::Idle,
+            state: CrafterState::Idle,
             //progress_bar: asset_server.load("progress_bar.png"),
             //progress_bar_bg: asset_server.load("progress_bar_bg.png"),
         }
@@ -55,25 +58,15 @@ fn handle_crafting(
 ) {
     for (mut assembler, mut inventory, entity) in &mut assemblers {
         match assembler.state {
-            AssemblerState::Idle => (),
-            AssemblerState::Pending(repeating) => {
+            CrafterState::Idle => (),
+            CrafterState::Pending(repeating) => {
                 if let Some(recipe) = &assembler.recipe {
-                    let mut can_craft = true;
-                    for (item, amount) in &recipe.input {
-                        if !inventory.has_item(item, *amount) {
-                            can_craft = false;
-                            break;
-                        }
-                    }
-                    if can_craft {
-                        for (item, amount) in &recipe.input {
-                            inventory.remove_item(item, *amount);
-                        }
-                        assembler.state = AssemblerState::Assembling(repeating);
+                    if inventory.remove_items(recipe.input.clone()) {
+                        assembler.state = CrafterState::Assembling(repeating);
                     }
                 }
             }
-            AssemblerState::Assembling(repeating) => {
+            CrafterState::Assembling(repeating) => {
                 if let Some(recipe) = assembler.recipe.as_ref() {
                     if assembler.progress + time.delta_seconds() >= recipe.cost {
                         // Notify that crafting is complete
@@ -82,13 +75,11 @@ fn handle_crafting(
                             recipe: recipe.clone(),
                         });
                         // Update the items
-                        recipe.output.iter().for_each(|(item, amount)| {
-                            inventory.add_item(item, *amount);
-                        });
+                        inventory.add_items(recipe.output.clone());
 
                         assembler.state = match repeating {
-                            true => AssemblerState::Pending(true),
-                            false => AssemblerState::Idle,
+                            true => CrafterState::Pending(true),
+                            false => CrafterState::Idle,
                         };
 
                         assembler.progress = 0.0;
@@ -108,11 +99,9 @@ fn cancel_player_crafting(
     for (mut assembler, mut inventory) in &mut assemblers {
         if input.just_pressed(KeyCode::X) {
             if let Some(ref recipe) = &assembler.recipe {
-                for (item, amount) in &recipe.input {
-                    inventory.add_item(item, *amount);
-                }
+                inventory.add_items(recipe.input.clone());
             }
-            assembler.state = AssemblerState::Idle;
+            assembler.state = CrafterState::Idle;
             assembler.progress = 0.0;
             assembler.recipe = None;
         }

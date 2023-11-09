@@ -1,8 +1,24 @@
 use bevy::prelude::*;
 
-use crate::{items::ItemId, recipes::Recipe, structures::StructureId};
+use crate::{items::ItemType, recipes::Recipe, structures::StructureType};
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct FaeCommonPlugin;
+
+impl Plugin for FaeCommonPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<GameState>()
+            .register_type::<MainMenuUI>()
+            .register_type::<FaeGameCamera>()
+            .register_type::<Speed>()
+            .register_type::<BoundingBox>()
+            .register_type::<Clickable>()
+            .register_type::<Hoverable>()
+            .register_type::<Held>()
+            .register_type::<Holdable>();
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect)]
 pub enum GameState {
     MainMenu,
     Playing,
@@ -15,31 +31,31 @@ impl Default for GameState {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct MainMenuUI;
 
-#[derive(Component)]
-pub struct MyGameCamera;
+#[derive(Component, Reflect)]
+pub struct FaeGameCamera;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Speed(f32);
 
-#[derive(Component)]
+#[derive(Component, Reflect, Debug)]
 pub struct BoundingBox(pub Rect);
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Clickable;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Hoverable;
 
-#[derive(Component)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum Holdable {
-    Item(ItemId),
-    Structure(StructureId),
+    Item(ItemType),
+    Structure(StructureType),
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Debug)]
 pub struct Held(pub Option<Holdable>);
 
 pub fn round_to_grid(pos: Vec2) -> Vec2 {
