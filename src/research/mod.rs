@@ -3,7 +3,7 @@ use bevy::{prelude::*, transform::commands, utils::HashSet};
 use crate::recipes::RecipeType;
 use strum::IntoEnumIterator;
 
-struct ResearchPlugin;
+pub struct ResearchPlugin;
 
 #[derive(Resource, Reflect)]
 pub struct AvailableRecipes(pub HashSet<RecipeType>);

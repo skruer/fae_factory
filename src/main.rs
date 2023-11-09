@@ -6,6 +6,7 @@ use crafting::CraftingPlugin;
 use input::{camera::MainCamera, FaeInputPlugin};
 use items::ItemPlugin;
 use player::PlayerPlugin;
+use research::ResearchPlugin;
 use structures::StructurePlugin;
 
 mod common;
@@ -42,6 +43,7 @@ fn main() {
             ItemPlugin,
             StructurePlugin,
             FaeInputPlugin,
+            ResearchPlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_plugins(
