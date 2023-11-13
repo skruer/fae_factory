@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::render::render_phase::PhaseItem;
 use bevy::sprite::Anchor;
 
 use crate::common::Held;
@@ -112,6 +113,19 @@ fn select_assembler_recipe(
                         }
                         None => Some(Recipe::from(RecipeType::WoodToToy)),
                     };
+                    match crafter.recipe.as_ref() {
+                        Some(recipe)
+                            if recipe.recipe_type
+                                == new_recipe
+                                    .as_ref()
+                                    .map_or_else(|| panic!(), |recipe| recipe.recipe_type) =>
+                        {
+                            ()
+                        }
+                        _ => {
+                            recipe_change_event.send(AssemblerRecipeChangedEvent(*entity));
+                        }
+                    }
                     crafter.recipe = new_recipe;
                     crafter.state = CrafterState::Pending(true);
                 }

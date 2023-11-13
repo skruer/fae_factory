@@ -94,7 +94,7 @@ impl StructureType {
         }
     }
 
-    fn asset_file(&self) -> String {
+    pub fn asset_file(&self) -> String {
         match self {
             _ => format!("building_{}.png", GridPosition::PIXELS_PER_TILE),
         }
@@ -213,6 +213,7 @@ fn handle_remove_structure(
     }
 
     if let Some(event) = event.iter().last() {
+        println!("Handling remove structure");
         if !event.modifiers.check_only_pressed(&vec![]) || event.entities.is_empty() {
             return;
         }

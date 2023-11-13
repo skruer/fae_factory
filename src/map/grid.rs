@@ -49,16 +49,16 @@ impl GridPosition {
 
     pub fn sprite_translation(&self) -> Vec3 {
         Vec3::new(
-            self.0.x as f32 * Self::PIXELS_PER_TILE as f32,
-            self.0.y as f32 * Self::PIXELS_PER_TILE as f32,
+            (self.0.x * Self::PIXELS_PER_TILE) as f32,
+            (self.0.y * Self::PIXELS_PER_TILE) as f32,
             0.0,
         )
     }
 
     pub fn sprite_translation_z(&self, z: f32) -> Vec3 {
         Vec3::new(
-            self.0.x as f32 * Self::PIXELS_PER_TILE as f32,
-            self.0.y as f32 * Self::PIXELS_PER_TILE as f32,
+            (self.0.x * Self::PIXELS_PER_TILE) as f32,
+            (self.0.y * Self::PIXELS_PER_TILE) as f32,
             z,
         )
     }
@@ -94,5 +94,8 @@ pub struct GridTile {
 }
 
 fn update_mouse_grid_location(mycoords: Res<MyWorldCoords>, mut hovered_grid: ResMut<HoveredGrid>) {
-    hovered_grid.0 = GridPosition::from_position(mycoords.0);
+    let new_grid = GridPosition::from_position(mycoords.0);
+    if new_grid != hovered_grid.0 {
+        hovered_grid.0 = new_grid;
+    }
 }

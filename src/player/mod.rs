@@ -93,7 +93,7 @@ fn player_craft(
     input: Res<Input<KeyCode>>,
     mut player: Query<&mut Crafter, With<Player>>,
 ) {
-    for (mut assembler) in &mut player {
+    for mut assembler in &mut player {
         if input.just_pressed(KeyCode::Space) && assembler.state == CrafterState::Idle {
             println!("Crafting!");
             assembler.recipe = Some(Recipe::from(RecipeType::WoodToToy));
