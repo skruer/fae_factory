@@ -1,9 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
     common::{Held, Holdable},
     items::ItemType,
-    player::{Player, PlayerMove},
+    player::events::PlayerMoveEvent,
     structures::StructureType,
 };
 
@@ -11,13 +11,20 @@ pub(super) struct FaeKeyboardPlugin;
 
 impl Plugin for FaeKeyboardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_movement_input, select_held));
+        app.add_systems(Update, (handle_movement_input, select_held))
+            .insert_resource(HeldState::default());
     }
+}
+
+#[derive(Resource, Reflect, Debug, Default)]
+pub struct HeldState {
+    pub key: Option<KeyCode>,
+    pub index: usize,
 }
 
 pub(super) fn handle_movement_input(
     key_input: Res<Input<KeyCode>>,
-    mut player: Query<(&mut PlayerMove,), With<Player>>,
+    mut event: EventWriter<PlayerMoveEvent>,
 ) {
     let keys = vec![
         (KeyCode::W, Vec2::new(0.0, 1.0)),
@@ -34,30 +41,62 @@ pub(super) fn handle_movement_input(
         })
         .fold(Vec2::new(0.0, 0.0), |acc, direction| acc + direction)
         .try_normalize();
-    let mut player = player.single_mut();
-    *player.0 = PlayerMove(direction);
+    direction.map(|direction| event.send(PlayerMoveEvent(direction)));
 }
 
-pub(super) fn select_held(keys: Res<Input<KeyCode>>, mut query: Query<&mut Held>) {
+pub(super) fn select_held(
+    keys: Res<Input<KeyCode>>,
+    mut query: Query<&mut Held>,
+    mut held_state: ResMut<HeldState>,
+) {
     // This should be defined like this for future use with player configuration
     use Holdable::*;
-    let select_keys = vec![
-        (KeyCode::Key1, Structure(StructureType::Assembler)),
-        (KeyCode::Key2, Structure(StructureType::Conveyor)),
-        (KeyCode::Key3, Structure(StructureType::Storage)),
-        (KeyCode::Key4, Structure(StructureType::Grabber)),
-        (KeyCode::Key5, Item(ItemType::Wood)),
-        (KeyCode::Key6, Item(ItemType::Stone)),
-        (KeyCode::Key7, Item(ItemType::Crystal)),
-        (KeyCode::Key8, Item(ItemType::Toy)),
-    ];
+    use ItemType::*;
+    use StructureType::*;
+    let select_keys: HashMap<KeyCode, Vec<Holdable>> = [
+        (KeyCode::Key1, vec![Structure(Assembler)]),
+        (
+            KeyCode::Key2,
+            vec![Structure(Conveyor), Structure(Grabber), Structure(Chest)],
+        ),
+        (
+            KeyCode::Key3,
+            vec![
+                Structure(WoodFairy),
+                Structure(StoneFairy),
+                Structure(CrystalFairy),
+            ],
+        ),
+        (KeyCode::Key4, vec![Item(Wood), Item(Stone), Item(Crystal)]),
+        (KeyCode::Key0, vec![]),
+    ]
+    .into_iter()
+    .collect();
 
-    let mut selected_structure = query.single_mut();
+    let selected_key = select_keys
+        .iter()
+        .filter_map(|(key, structures)| match keys.just_pressed(*key) {
+            true => Some((key, structures)),
+            _ => None,
+        })
+        .last();
 
-    select_keys.iter().for_each(|(key, structure)| {
-        if keys.just_pressed(*key) {
-            *selected_structure = Held(Some(*structure));
-            println!("Selected structure: {:?}", structure);
-        }
-    });
+    *held_state = match selected_key {
+        Some(key_info) => HeldState {
+            key: Some(*key_info.0),
+            index: match held_state.key {
+                Some(key) if key == *key_info.0 => (held_state.index + 1) % key_info.1.len(),
+                _ => 0,
+            },
+        },
+        _ => return,
+    };
+
+    let mut held = query.single_mut();
+    let holdable = select_keys
+        .get(&held_state.key.map_or(KeyCode::Escape, |key| key))
+        .map(|structures| structures.get(held_state.index))
+        .flatten();
+    *held = Held(holdable.cloned());
+    println!("Held: {:?}", held);
 }

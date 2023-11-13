@@ -3,6 +3,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use crafting::CraftingPlugin;
 use input::FaeInputPlugin;
 use items::ItemPlugin;
+use map::MapPlugin;
 use player::PlayerPlugin;
 use research::ResearchPlugin;
 use structures::StructurePlugin;
@@ -11,6 +12,7 @@ mod common;
 mod crafting;
 mod input;
 mod items;
+mod map;
 mod player;
 mod recipes;
 mod research;
@@ -42,6 +44,7 @@ fn main() {
             StructurePlugin,
             FaeInputPlugin,
             ResearchPlugin,
+            MapPlugin,
         ))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_plugins(

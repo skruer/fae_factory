@@ -22,7 +22,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((camera, MainCamera {}));
 }
 
-fn my_cursor_system(
+pub(crate) fn my_cursor_system(
     mut mycoords: ResMut<MyWorldCoords>,
     // query to get the window (so we can read the current cursor position)
     q_window: Query<&Window, With<PrimaryWindow>>,

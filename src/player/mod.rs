@@ -2,18 +2,24 @@ use crate::{
     common::Held,
     crafting::{Crafter, CrafterState},
     items::{inventory::Inventory, ItemType},
+    map::grid::GridPosition,
     recipes::{Recipe, RecipeType},
     Speed,
 };
 
 use bevy::prelude::*;
 
+use self::events::PlayerMoveEvent;
+
+pub mod events;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(Update, (player_movement_controls, player_craft));
+            .add_systems(Update, (player_movement_controls, player_craft))
+            .add_event::<PlayerMoveEvent>();
     }
 }
 
@@ -27,6 +33,7 @@ pub struct PlayerMove(pub Option<Vec2>);
 pub struct FaePlayerBundle {
     pub player: Player,
     pub player_move: PlayerMove,
+    pub grid_position: GridPosition,
     pub speed: Speed,
     pub inventory: Inventory,
     pub crafter: Crafter,
@@ -40,9 +47,13 @@ impl Default for FaePlayerBundle {
             player: Player,
             player_move: PlayerMove(None),
             speed: Speed(200.0),
-            inventory: Inventory::new(10, Some(vec![(Wood, 10), (Crystal, 10), (Stone, 10)])),
+            inventory: Inventory::new(
+                10,
+                Some(vec![(Wood, 10), (Crystal, 10), (Stone, 10), (Toy, 10)]),
+            ),
             crafter: Crafter::new(),
             held: Held(None),
+            grid_position: GridPosition::default(),
         }
     }
 }
@@ -60,21 +71,20 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn player_movement_controls(
-    mut player: Query<(&PlayerMove, &Speed, &mut Transform), With<Player>>,
+    mut player: Query<(&Speed, &mut Transform, &mut GridPosition), With<Player>>,
     time: Res<Time>,
+    mut event: EventReader<PlayerMoveEvent>,
 ) {
-    let (direction, speed, mut transform) = player.single_mut();
-    if direction.0.is_none() {
-        return;
-    }
+    if let Some(direction) = event.iter().last() {
+        let direction = direction.0;
+        let (speed, mut transform, mut grid_position) = player.single_mut();
+        let distance = speed.0 * time.delta_seconds();
 
-    let direction = direction.0.unwrap();
-
-    let distance = speed.0 * time.delta_seconds();
-
-    if direction.length() > 0.0 {
-        transform.translation.x += distance * direction.x;
-        transform.translation.y += distance * direction.y;
+        if direction.length() > 0.0 {
+            transform.translation.x += distance * direction.x;
+            transform.translation.y += distance * direction.y;
+            *grid_position = GridPosition::from_translation(transform.translation);
+        }
     }
 }
 

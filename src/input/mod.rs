@@ -54,12 +54,12 @@ fn gather_modifiers(keys: &Res<Input<KeyCode>>) -> Vec<FaeEntityInputModifier> {
         .collect()
 }
 
-impl From<Res<'_, Input<KeyCode>>> for FaeInputModifier {
-    fn from(keys: Res<Input<KeyCode>>) -> Self {
+impl From<&Res<'_, Input<KeyCode>>> for FaeInputModifier {
+    fn from(keys: &Res<Input<KeyCode>>) -> Self {
         FaeInputModifier::new(gather_modifiers(&keys))
     }
 }
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug, Clone)]
 pub struct MyWorldCoords(pub Vec2);
 pub struct FaeInputPlugin;
 

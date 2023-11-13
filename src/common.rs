@@ -10,7 +10,6 @@ impl Plugin for FaeCommonPlugin {
             .register_type::<MainMenuUI>()
             .register_type::<FaeGameCamera>()
             .register_type::<Speed>()
-            .register_type::<BoundingBox>()
             .register_type::<Clickable>()
             .register_type::<Hoverable>()
             .register_type::<Held>()
@@ -40,14 +39,19 @@ pub struct FaeGameCamera;
 #[derive(Component, Reflect)]
 pub struct Speed(f32);
 
-#[derive(Component, Reflect, Debug)]
-pub struct BoundingBox(pub Rect);
-
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 pub struct Clickable;
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 pub struct Hoverable;
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+pub enum Facing {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum Holdable {

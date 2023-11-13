@@ -29,13 +29,21 @@ pub struct Crafter {
     //progress_bar_bg: Handle<ColorMaterial>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect, Default)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Reflect)]
 pub enum CrafterState {
-    #[default]
     Idle,
     Pending(bool),
     Assembling(bool),
 }
+
+impl Default for CrafterState {
+    fn default() -> Self {
+        CrafterState::Pending(true)
+    }
+}
+
+#[derive(Component, Reflect)]
+pub struct CrafterSpeed(pub f32);
 
 impl Crafter {
     pub fn new() -> Self {
@@ -51,29 +59,30 @@ impl Crafter {
 
 fn handle_crafting(
     time: Res<Time>,
-    mut assemblers: Query<(&mut Crafter, &mut Inventory, Entity)>,
+    mut assemblers: Query<(&mut Crafter, &mut Inventory, Option<&CrafterSpeed>, Entity)>,
     mut events: EventWriter<CraftCompleteEvent>,
 ) {
-    for (mut assembler, mut inventory, entity) in &mut assemblers {
+    for (mut assembler, mut inventory, speed, entity) in &mut assemblers {
         match assembler.state {
             CrafterState::Idle => (),
             CrafterState::Pending(repeating) => {
                 if let Some(recipe) = &assembler.recipe {
-                    if inventory.remove_items(recipe.input.clone()) {
+                    if inventory.remove_items(&recipe.input) {
                         assembler.state = CrafterState::Assembling(repeating);
                     }
                 }
             }
             CrafterState::Assembling(repeating) => {
                 if let Some(recipe) = assembler.recipe.as_ref() {
-                    if assembler.progress + time.delta_seconds() >= recipe.cost {
+                    let crafting_speed = speed.map_or(1.0, |s| s.0);
+                    if assembler.progress + time.delta_seconds() * crafting_speed >= recipe.cost {
                         // Notify that crafting is complete
                         events.send(CraftCompleteEvent {
                             entity,
                             recipe: recipe.clone(),
                         });
                         // Update the items
-                        inventory.add_items(recipe.output.clone());
+                        inventory.add_items(&recipe.output);
 
                         assembler.state = match repeating {
                             true => CrafterState::Pending(true),
@@ -97,7 +106,7 @@ fn cancel_player_crafting(
     for (mut assembler, mut inventory) in &mut assemblers {
         if input.just_pressed(KeyCode::X) {
             if let Some(ref recipe) = &assembler.recipe {
-                inventory.add_items(recipe.input.clone());
+                inventory.add_items(&recipe.input);
             }
             assembler.state = CrafterState::Idle;
             assembler.progress = 0.0;

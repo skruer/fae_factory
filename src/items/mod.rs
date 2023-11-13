@@ -5,18 +5,24 @@ use core::fmt;
 
 use crate::{
     common::{Clickable, Held, Holdable},
-    input::mouse::{FaeEntityClickEvent, FaeEntityContextClickEvent},
+    input::{
+        mouse::{FaeEntityClickEvent, FaeEntityContextClickEvent},
+        FaeEntityInputModifier, FaeInputModifier,
+    },
     player::Player,
 };
 
-use self::inventory::Inventory;
+use self::{inventory::Inventory, item_spawner::ItemSpawnerPlugin};
 
 pub(crate) mod inventory;
+pub(crate) mod item_spawner;
+
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_click_insert_item, handle_click_empty))
+        app.add_plugins(ItemSpawnerPlugin)
+            .add_systems(Update, (handle_click_insert_item, handle_click_empty))
             .register_type::<Item>()
             .register_type::<Inventory>()
             .register_type::<ItemType>();
@@ -33,14 +39,6 @@ pub enum ItemType {
     Crystal,
     Stone,
     Toy,
-}
-
-#[derive(Component, Debug, Reflect)]
-pub struct ItemSpawner {
-    pub item: ItemType,
-    pub amount: u32,
-    pub interval: f32,
-    pub timer: Timer,
 }
 
 impl fmt::Display for ItemType {
@@ -64,12 +62,13 @@ fn handle_click_insert_item(
     // Retrieve the newest click event, if it exists, and extract the clicked inventory and transform.
     let (mut clicked_inventory, _clicked_transform) = match event.iter().last() {
         Some(click_event) => {
-            if !click_event.modifiers.check_only_pressed(&vec![]) || click_event.entity.is_none() {
+            if !click_event.modifiers.check_only_pressed(&vec![]) || click_event.entities.is_empty()
+            {
                 return;
             }
 
-            let entity = click_event.entity.unwrap();
-            if let Ok((inventory, transform)) = query.get_mut(entity) {
+            let entity = click_event.entities.first().unwrap();
+            if let Ok((inventory, transform)) = query.get_mut(*entity) {
                 (inventory, transform)
             } else {
                 return;
@@ -89,28 +88,32 @@ fn handle_click_insert_item(
     }
 
     let (mut player_inventory, _player_transform) = player.single_mut();
-    if player_inventory.remove_items([(item, 1)].to_vec()) {
-        clicked_inventory.add_items([(item, 1)].to_vec());
+    if player_inventory.remove_items(&vec![(item, 1)]) {
+        clicked_inventory.add_items(&vec![(item, 1)]);
     }
 
-    if !player_inventory.has_items([(item, 1)].to_vec()) {
+    if !player_inventory.has_item(&item, 1) {
         *held = Held(None);
     }
 }
 
 fn handle_click_empty(
-    mut event: EventReader<FaeEntityContextClickEvent>,
+    mut event: EventReader<FaeEntityClickEvent>,
     mut player: Query<(&mut Inventory, &Transform), With<Player>>,
     mut query: Query<(&mut Inventory, &Transform), (With<Clickable>, Without<Player>)>,
 ) {
     let (mut clicked_inventory, _clicked_transform) = match event.iter().last() {
         Some(click_event) => {
-            if !click_event.modifiers.check_only_pressed(&vec![]) || click_event.entity.is_none() {
+            if !click_event
+                .modifiers
+                .check_only_pressed(&vec![FaeEntityInputModifier::Ctrl])
+                || click_event.entities.is_empty()
+            {
                 return;
             }
 
-            let entity = click_event.entity.unwrap();
-            if let Ok((inventory, transform)) = query.get_mut(entity) {
+            let entity = click_event.entities.first().unwrap();
+            if let Ok((inventory, transform)) = query.get_mut(*entity) {
                 (inventory, transform)
             } else {
                 return;
@@ -118,7 +121,8 @@ fn handle_click_empty(
         }
         _ => return,
     };
+    println!("Emptying inventory to player");
 
     let (mut player_inventory, _player_transform) = player.single_mut();
-    clicked_inventory.empty_into_other(&mut player_inventory);
+    clicked_inventory.try_empty_into_other(&mut player_inventory);
 }
