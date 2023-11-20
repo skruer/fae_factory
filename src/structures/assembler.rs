@@ -66,7 +66,7 @@ pub(super) fn spawn_assembler(
                 state: CrafterState::Pending(true),
                 ..default()
             },
-            Inventory::new(2, None).filtered_for(None).clone(),
+            Inventory::new(2, vec![]).filtered_for(None).clone(),
             Clickable {},
         ))
         .with_children(|child_builder| {

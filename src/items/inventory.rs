@@ -23,6 +23,33 @@ impl Default for Inventory {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Component)]
+pub struct ItemAmount {
+    pub item: ItemType,
+    pub amount: Option<u32>,
+}
+
+impl ItemAmount {
+    fn to_tuple(&self) -> (ItemType, u32) {
+        (self.item, self.amount.unwrap_or(0))
+    }
+}
+
+impl From<(ItemType, u32)> for ItemAmount {
+    fn from((item, amount): (ItemType, u32)) -> Self {
+        ItemAmount {
+            item,
+            amount: Some(amount),
+        }
+    }
+}
+
+impl Into<(ItemType, u32)> for ItemAmount {
+    fn into(self) -> (ItemType, u32) {
+        (self.item, self.amount.unwrap_or(0))
+    }
+}
+
 #[derive(Component, Debug, Reflect, Clone)]
 pub enum InventoryFilter {
     All,
@@ -32,23 +59,28 @@ pub enum InventoryFilter {
 }
 
 impl Inventory {
-    pub fn new(slots: u16, items: Option<Vec<(ItemType, u32)>>) -> Self {
+    pub fn new(slots: u16, items: Vec<ItemAmount>) -> Self {
         let mut inventory = Inventory {
             items: HashMap::default(),
             slots,
             input_filter: InventoryFilter::All,
             output_filter: InventoryFilter::All,
         };
-        match items {
-            Some(items) => inventory.add_items(&items),
-            None => (),
-        }
+        items.into_iter().for_each(|item_amount| {
+            let (item, amount) = item_amount.into();
+            inventory.items.insert(item, amount);
+        });
         inventory
     }
 
     pub fn filtered_for(&mut self, recipe: Option<&Recipe>) -> &Self {
-        let inputs: Option<Vec<ItemType>> =
-            recipe.map(|recipe| recipe.input.iter().map(|(item, _)| item.clone()).collect());
+        let inputs: Option<Vec<ItemType>> = recipe.map(|recipe| {
+            recipe
+                .input
+                .iter()
+                .map(|item_amount| item_amount.item)
+                .collect()
+        });
         if let Some(inputs) = inputs {
             self.input_filter = InventoryFilter::Only(inputs.clone());
             self.output_filter = InventoryFilter::Except(inputs);
@@ -72,34 +104,36 @@ impl Inventory {
         self
     }
 
-    pub fn has_items(&self, items: &Vec<(ItemType, u32)>) -> bool {
-        items
-            .iter()
-            .all(|(item, amount)| self.has_item(item, *amount))
+    pub fn has_items(&self, items: &Vec<ItemAmount>) -> bool {
+        items.iter().all(|item_amount| self.has_item(item_amount))
     }
 
-    pub fn has_item(&self, item: &ItemType, amount: u32) -> bool {
-        self.items.get(item).map_or(false, |a| *a >= amount)
+    pub fn has_item(&self, item_amount: &ItemAmount) -> bool {
+        self.items
+            .get(&item_amount.item)
+            .map_or(false, |a| *a >= item_amount.amount.map_or(0, |a| a))
     }
 
-    pub fn add_items(&mut self, items: &Vec<(ItemType, u32)>) {
-        items.iter().for_each(|(item, amount)| {
-            if let Some(current) = self.items.get_mut(item) {
+    pub fn add_items(&mut self, items: &Vec<ItemAmount>) {
+        items.iter().for_each(|item_amount| {
+            let (item, amount) = item_amount.to_tuple();
+            if let Some(current) = self.items.get_mut(&item) {
                 *current += amount;
             } else {
-                self.items.insert(item.clone(), *amount);
+                self.items.insert(item.clone(), amount);
             }
         });
         println!("{:?}", self.items);
     }
 
-    pub fn remove_items(&mut self, items: &Vec<(ItemType, u32)>) -> bool {
+    pub fn remove_items(&mut self, items: &Vec<ItemAmount>) -> bool {
         if self.has_items(items) {
-            items.iter().for_each(|(item, amount)| {
-                if let Some(current) = self.items.get_mut(item) {
+            items.iter().for_each(|item_amount| {
+                let (item, amount) = item_amount.to_tuple();
+                if let Some(current) = self.items.get_mut(&item) {
                     *current -= amount;
                     if *current == 0 {
-                        self.items.remove(item);
+                        self.items.remove(&item);
                     }
                 } else {
                     // Guaranteed to have item, so this should never happen.
@@ -111,20 +145,25 @@ impl Inventory {
         return false;
     }
 
-    pub fn remove_if_possible(&mut self, items: &Vec<(ItemType, u32)>) -> Vec<(ItemType, u32)> {
+    pub fn remove_if_possible(&mut self, items: &Vec<ItemAmount>) -> Vec<ItemAmount> {
         items
             .iter()
-            .filter_map(|(item, amount)| {
-                if let Some(current) = self.items.get_mut(item) {
-                    let removed = if *current >= *amount {
-                        *current -= amount;
-                        *amount
-                    } else {
-                        self.items.remove(item).unwrap()
-                    };
-                    Some((*item, removed))
-                } else {
-                    None
+            .filter_map(|item_amount| {
+                let (item, amount) = item_amount.to_tuple();
+                match self.items.get_mut(&item) {
+                    Some(current) if *current > 0 => {
+                        let removed = if *current >= amount {
+                            *current -= amount;
+                            amount
+                        } else {
+                            self.items.remove(&item).unwrap()
+                        };
+                        Some(ItemAmount {
+                            item,
+                            amount: Some(removed),
+                        })
+                    }
+                    _ => None,
                 }
             })
             .collect()
@@ -140,16 +179,16 @@ impl Inventory {
         }
     }
 
-    pub fn pullable_items(&self, items: Vec<ItemType>) -> Vec<ItemType> {
+    pub fn pullable_items(&self, items: Vec<ItemAmount>) -> Vec<ItemAmount> {
         match &self.output_filter {
             InventoryFilter::All => items,
             InventoryFilter::Only(allowed) => items
                 .into_iter()
-                .filter(|item| allowed.contains(item))
+                .filter(|item| allowed.contains(&item.item))
                 .collect(),
             InventoryFilter::Except(disallowed) => items
                 .into_iter()
-                .filter(|item| !disallowed.contains(item))
+                .filter(|item| !disallowed.contains(&item.item))
                 .collect(),
             InventoryFilter::None => vec![], // This should probably not be possible, encode it in the type lol
         }
@@ -157,29 +196,43 @@ impl Inventory {
 
     pub fn try_empty_into_other(&mut self, other: &mut Inventory) {
         // Empty, respecting filters
-        let items_to_pull = self.pullable_items(self.items.iter().map(|(item, _)| *item).collect());
+        let items_to_pull = self.pullable_items(
+            self.items
+                .iter()
+                .map(|(item, amount)| (*item, *amount).into())
+                .collect(),
+        );
         self.move_items_into_other(other, items_to_pull);
     }
 
     pub fn force_empty_into_other(&mut self, other: &mut Inventory) -> &mut Self {
         // Skip filtering
-        let items_to_pull = self.items.iter().map(|(item, _)| *item).collect();
+        let items_to_pull = self
+            .items
+            .iter()
+            .map(|(item, amount)| (*item, *amount).into())
+            .collect();
         self.move_items_into_other(other, items_to_pull);
         self
     }
 
-    pub fn move_items_into_other(&mut self, other: &mut Inventory, items_to_pull: Vec<ItemType>) {
+    pub fn move_items_into_other(&mut self, other: &mut Inventory, items_to_pull: Vec<ItemAmount>) {
         // Generic function to move items between inventories by type
+        let pulled_types: Vec<ItemType> = items_to_pull
+            .iter()
+            .map(|item_amount| item_amount.item)
+            .collect();
+
         other.add_items(
             &self
                 .items
                 .iter()
-                .filter(|(item, _)| items_to_pull.contains(item))
-                .map(|(item, amount)| (*item, *amount))
+                .filter(|(item, _)| pulled_types.contains(item))
+                .map(|(item, amount)| (*item, *amount).into())
                 .collect(),
         );
         items_to_pull.into_iter().for_each(|item| {
-            self.items.remove(&item);
+            self.items.remove(&item.item);
         });
         println!("{:?}", self.items)
     }

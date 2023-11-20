@@ -21,7 +21,7 @@ impl Default for ChestBundle {
     fn default() -> Self {
         ChestBundle {
             chest: Chest,
-            inventory: Inventory::new(10, None).clear_filters(),
+            inventory: Inventory::new(10, vec![]).clear_filters(),
         }
     }
 }

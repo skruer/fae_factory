@@ -2,10 +2,8 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{
     common::Clickable,
-    input::mouse,
-    items::{inventory::Inventory, item_spawner::ItemSpawner, Item, ItemType},
+    items::{inventory::Inventory, item_spawner::ItemSpawner, ItemType},
     map::grid::GridPosition,
-    recipes::{Recipe, RecipeType},
     structures::{Structure, StructureType, STRUCTURE_Z},
 };
 
@@ -16,9 +14,9 @@ impl StructureType {
         use ItemType::*;
         use StructureType::*;
         match self {
-            WoodFairy => Some(ItemSpawner::new(vec![(Wood, 1)], 10.0)),
-            StoneFairy => Some(ItemSpawner::new(vec![(Stone, 1)], 10.0)),
-            CrystalFairy => Some(ItemSpawner::new(vec![(Crystal, 1)], 15.0)),
+            WoodFairy => Some(ItemSpawner::new(vec![(Wood, 1).into()], 10.0)),
+            StoneFairy => Some(ItemSpawner::new(vec![(Stone, 1).into()], 10.0)),
+            CrystalFairy => Some(ItemSpawner::new(vec![(Crystal, 1).into()], 15.0)),
             _ => None,
         }
     }
@@ -64,7 +62,7 @@ pub fn spawn_gatherer_structure(
             Structure(structure_type),
             mouse_grid.clone(),
             structure_type.get_gathering_spawner().unwrap(),
-            Inventory::new(2, None).filtered_only_remove().clone(),
+            Inventory::new(2, vec![]).filtered_only_remove().clone(),
             Clickable {},
         ))
         .with_children(|child_builder| {

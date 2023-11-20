@@ -1,4 +1,7 @@
-use crate::{items::ItemType, research::AvailableRecipes};
+use crate::{
+    items::{inventory::ItemAmount, ItemType},
+    research::AvailableRecipes,
+};
 use bevy::prelude::*;
 use core::fmt;
 
@@ -7,9 +10,9 @@ use strum_macros::EnumIter;
 #[derive(Reflect, Clone, Debug)]
 pub struct Recipe {
     pub recipe_type: RecipeType,
-    pub input: Vec<(ItemType, u32)>,  // Input cost
-    pub output: Vec<(ItemType, u32)>, // Production
-    pub cost: f32,                    // Time to craft
+    pub input: Vec<ItemAmount>,  // Input cost
+    pub output: Vec<ItemAmount>, // Production
+    pub cost: f32,               // Time to craft
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect, EnumIter, Resource)]
@@ -53,14 +56,14 @@ impl From<RecipeType> for Recipe {
         match recipe_type {
             WoodToToy => Recipe {
                 recipe_type,
-                input: vec![(Wood, 3)],
-                output: vec![(Toy, 1)],
+                input: vec![(Wood, 3).into()],
+                output: vec![(Toy, 1).into()],
                 cost: 5.0,
             },
             CrystalToToy => Recipe {
                 recipe_type,
-                input: vec![(Crystal, 1)],
-                output: vec![(Toy, 1)],
+                input: vec![(Crystal, 1).into()],
+                output: vec![(Toy, 1).into()],
                 cost: 10.0,
             },
         }

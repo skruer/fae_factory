@@ -4,7 +4,10 @@ use bevy::prelude::*;
 
 use crate::structures::StructureType;
 
-use super::{inventory::Inventory, ItemType};
+use super::{
+    inventory::{Inventory, ItemAmount},
+    ItemType,
+};
 
 pub struct ItemSpawnerPlugin;
 
@@ -18,7 +21,7 @@ impl Plugin for ItemSpawnerPlugin {
 
 #[derive(Component, Debug, Reflect, Default)]
 pub struct ItemSpawner {
-    pub output: Vec<(ItemType, u32)>,
+    pub output: Vec<ItemAmount>,
     pub interval_seconds: f32,
     pub timer: Timer,
 }
@@ -28,9 +31,9 @@ impl TryFrom<StructureType> for ItemSpawner {
     fn try_from(value: StructureType) -> Result<Self, Self::Error> {
         use StructureType::{CrystalFairy, StoneFairy, WoodFairy};
         match value {
-            WoodFairy => Ok(ItemSpawner::new(vec![(ItemType::Wood, 1)], 10.0)),
-            StoneFairy => Ok(ItemSpawner::new(vec![(ItemType::Stone, 1)], 10.0)),
-            CrystalFairy => Ok(ItemSpawner::new(vec![(ItemType::Crystal, 1)], 10.0)),
+            WoodFairy => Ok(ItemSpawner::new(vec![(ItemType::Wood, 1).into()], 10.0)),
+            StoneFairy => Ok(ItemSpawner::new(vec![(ItemType::Stone, 1).into()], 10.0)),
+            CrystalFairy => Ok(ItemSpawner::new(vec![(ItemType::Crystal, 1).into()], 10.0)),
             _ => Err(()),
         }
     }
@@ -39,7 +42,7 @@ impl TryFrom<StructureType> for ItemSpawner {
 #[derive(Event, Debug, Reflect)]
 pub struct ItemSpawnEvent {
     pub entity: Entity,
-    pub items: Vec<(ItemType, u32)>,
+    pub items: Vec<ItemAmount>,
 }
 
 #[derive(Component, Debug, Reflect)]
@@ -49,7 +52,7 @@ pub struct ItemSpawnSource(Inventory);
 pub struct ItemSpawnSpeed(pub f32);
 
 impl ItemSpawner {
-    pub fn new(output: Vec<(ItemType, u32)>, interval_seconds: f32) -> Self {
+    pub fn new(output: Vec<ItemAmount>, interval_seconds: f32) -> Self {
         ItemSpawner {
             output,
             interval_seconds,

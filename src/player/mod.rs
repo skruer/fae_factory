@@ -49,7 +49,12 @@ impl Default for FaePlayerBundle {
             speed: Speed(200.0),
             inventory: Inventory::new(
                 10,
-                Some(vec![(Wood, 10), (Crystal, 10), (Stone, 10), (Toy, 10)]),
+                vec![
+                    (Wood, 10).into(),
+                    (Crystal, 10).into(),
+                    (Stone, 10).into(),
+                    (Toy, 10).into(),
+                ],
             ),
             crafter: Crafter::new(),
             held: Held(None),

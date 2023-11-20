@@ -12,7 +12,10 @@ use crate::{
     player::Player,
 };
 
-use self::{inventory::Inventory, item_spawner::ItemSpawnerPlugin};
+use self::{
+    inventory::{Inventory, ItemAmount},
+    item_spawner::ItemSpawnerPlugin,
+};
 
 pub(crate) mod inventory;
 pub(crate) mod item_spawner;
@@ -88,11 +91,14 @@ fn handle_click_insert_item(
     }
 
     let (mut player_inventory, _player_transform) = player.single_mut();
-    if player_inventory.remove_items(&vec![(item, 1)]) {
-        clicked_inventory.add_items(&vec![(item, 1)]);
+    if player_inventory.remove_items(&vec![(item, 1).into()]) {
+        clicked_inventory.add_items(&vec![(item, 1).into()]);
     }
 
-    if !player_inventory.has_item(&item, 1) {
+    if !player_inventory.has_item(&ItemAmount {
+        item,
+        amount: Some(1),
+    }) {
         *held = Held(None);
     }
 }

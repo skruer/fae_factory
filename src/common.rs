@@ -59,6 +59,12 @@ pub enum Holdable {
     Structure(StructureType),
 }
 
+#[derive(Component, Reflect, Default)]
+pub struct TimedProcessState {
+    pub duration: f32,
+    pub timer: Timer,
+}
+
 #[derive(Component, Reflect, Debug)]
 pub struct Held(pub Option<Holdable>);
 

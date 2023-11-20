@@ -8,7 +8,10 @@ use crate::{
         mouse::{FaeEntityClickEvent, FaeEntityContextClickEvent},
         MyWorldCoords,
     },
-    items::{inventory::Inventory, ItemType},
+    items::{
+        inventory::{Inventory, ItemAmount},
+        ItemType,
+    },
     map::grid::{GridPosition, HoveredGrid},
     player::Player,
     structures::{
@@ -23,6 +26,7 @@ use self::assembler::AssemblerPlugin;
 pub mod assembler;
 pub mod chest;
 pub mod gatherer;
+pub mod grabber;
 
 const STRUCTURE_Z: f32 = 1.0;
 
@@ -61,17 +65,17 @@ pub enum StructureType {
 }
 
 impl StructureType {
-    fn get_cost(&self) -> Vec<(ItemType, u32)> {
+    fn get_cost(&self) -> Vec<ItemAmount> {
         use ItemType::*;
         use StructureType::*;
         match self {
-            Assembler => vec![(Crystal, 3), (Wood, 3)],
-            Conveyor => vec![(Crystal, 1), (Wood, 1), (Stone, 1)],
-            Chest => vec![(Stone, 5)],
-            Grabber => vec![(Crystal, 2)],
-            WoodFairy => vec![(Toy, 2)],
-            StoneFairy => vec![(Toy, 3)],
-            CrystalFairy => vec![(Toy, 5)],
+            Assembler => vec![(Crystal, 3).into(), (Wood, 3).into()],
+            Conveyor => vec![(Crystal, 1).into(), (Wood, 1).into(), (Stone, 1).into()],
+            Chest => vec![(Stone, 5).into()],
+            Grabber => vec![(Crystal, 2).into()],
+            WoodFairy => vec![(Toy, 2).into()],
+            StoneFairy => vec![(Toy, 3).into()],
+            CrystalFairy => vec![(Toy, 5).into()],
         }
     }
 
@@ -148,12 +152,12 @@ fn handle_spawn_structure(
             let mut structure_commands = commands.spawn((
                 StructureBundle {
                     structure: Structure(structure_type),
-                    grid_position: mouse_grid.0.clone(),
+                    grid_position: mouse_grid.grid_position.clone(),
                     ..default()
                 },
                 SpriteBundle {
                     transform: Transform {
-                        translation: mouse_grid.0.sprite_translation_z(STRUCTURE_Z),
+                        translation: mouse_grid.grid_position.sprite_translation_z(STRUCTURE_Z),
                         ..default()
                     },
                     texture: asset_server.load(structure_type.asset_file()),
